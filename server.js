@@ -1,4 +1,5 @@
 console.log("서버 시작됨");
+const path = require('path');
 const express = require('express');
 const mongoose = require('mongoose');
 const cors = require('cors');
@@ -8,7 +9,8 @@ const port = process.env.PORT || 3000;
 const mongoUri = process.env.MONGODB_URI;
 
 app.use(cors({ origin: true }));
-app.use(express.static('public'));
+const publicDir = path.join(__dirname, 'public');
+app.use(express.static(publicDir));
 app.use(express.json());
 
 if (!mongoUri) {
@@ -53,6 +55,10 @@ app.get('/load', async (req, res) => {
 
 app.get('/health', (req, res) => {
   res.status(200).json({ status: 'ok' });
+});
+
+app.get('/', (req, res) => {
+  res.sendFile(path.join(publicDir, 'text.html'));
 });
 
 app.delete('/delete/:id', async (req, res) => {
