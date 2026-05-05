@@ -42,6 +42,17 @@
       border-radius: 8px;
     }
 
+    .video-link {
+      margin: 8px 0 0;
+      font-size: 12px;
+      color: #d1d5db;
+    }
+
+    .video-link a {
+      color: #93c5fd;
+      text-decoration: none;
+    }
+
     .card {
       background: #ffffff;
       border-radius: 12px;
@@ -156,12 +167,16 @@
   <div class="video-panel">
     <iframe
       class="video-frame"
-      src="https://www.youtube.com/embed/IPxbxLejSbA?autoplay=1&mute=1&rel=0"
+      src="https://www.youtube.com/embed/videoseries?list=RDIPxbxLejSbA&autoplay=1&mute=1&rel=0"
       title="YouTube video player"
       allow="accelerometer; autoplay; clipboard-write; encrypted-media; gyroscope; picture-in-picture; web-share"
       referrerpolicy="strict-origin-when-cross-origin"
       allowfullscreen>
     </iframe>
+    <p class="video-link">
+      영상이 안 보이면
+      <a href="https://www.youtube.com/watch?v=IPxbxLejSbA&list=RDIPxbxLejSbA&start_radio=1" target="_blank" rel="noopener noreferrer">유튜브에서 열기</a>
+    </p>
   </div>
 
   <div class="container">
