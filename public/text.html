@@ -1,0 +1,285 @@
+<!DOCTYPE html>
+<html lang="ko">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <title>우리들의 메모장</title>
+  <style>
+    * {
+      box-sizing: border-box;
+    }
+
+    body {
+      margin: 0;
+      font-family: Arial, sans-serif;
+      background: #f3f4f6;
+      color: #111827;
+    }
+
+    .container {
+      max-width: 760px;
+      margin: 40px auto;
+      padding: 0 16px;
+    }
+
+    .card {
+      background: #ffffff;
+      border-radius: 12px;
+      padding: 20px;
+      box-shadow: 0 8px 24px rgba(17, 24, 39, 0.08);
+    }
+
+    h2 {
+      margin: 0 0 16px;
+    }
+
+    .toolbar {
+      display: flex;
+      gap: 10px;
+      margin-bottom: 12px;
+    }
+
+    #memoInput {
+      flex: 1;
+      height: 44px;
+      padding: 10px 12px;
+      border: 1px solid #d1d5db;
+      border-radius: 8px;
+      font-size: 15px;
+      outline: none;
+    }
+
+    #memoInput:focus {
+      border-color: #2563eb;
+      box-shadow: 0 0 0 3px rgba(37, 99, 235, 0.15);
+    }
+
+    button {
+      border: 0;
+      border-radius: 8px;
+      padding: 0 14px;
+      height: 44px;
+      font-size: 14px;
+      cursor: pointer;
+    }
+
+    .add-btn {
+      background: #2563eb;
+      color: #ffffff;
+    }
+
+    .add-btn:hover {
+      background: #1e4ed8;
+    }
+
+    .muted {
+      margin: 0 0 12px;
+      color: #6b7280;
+      font-size: 13px;
+    }
+
+    #memoList {
+      list-style: none;
+      margin: 0;
+      padding: 0;
+      display: grid;
+      gap: 10px;
+      border-top: 2px solid #d1d5db;
+      padding-top: 12px;
+      min-height: 80px;
+    }
+
+    .memo-item {
+      display: flex;
+      align-items: center;
+      justify-content: space-between;
+      gap: 12px;
+      border: 1px solid #e5e7eb;
+      border-radius: 8px;
+      padding: 10px 12px;
+      background: #f9fafb;
+    }
+
+    .empty-item {
+      color: #6b7280;
+      border: 1px dashed #d1d5db;
+      background: #ffffff;
+      border-radius: 8px;
+      padding: 12px;
+      font-size: 14px;
+    }
+
+    .memo-text {
+      margin: 0;
+      word-break: break-word;
+      line-height: 1.4;
+    }
+
+    .meta {
+      margin: 3px 0 0;
+      color: #6b7280;
+      font-size: 12px;
+    }
+
+    .delete-btn {
+      background: #ef4444;
+      color: #ffffff;
+      flex-shrink: 0;
+    }
+
+    .delete-btn:hover {
+      background: #dc2626;
+    }
+  </style>
+</head>
+<body>
+  <div class="container">
+    <div class="card">
+      <h2>우리들의 메모장</h2>
+      <div class="toolbar">
+        <input id="memoInput" placeholder="메모를 입력하세요" />
+        <button class="add-btn" id="addBtn" type="button">추가</button>
+      </div>
+      <p class="muted" id="statusText">로딩 중...</p>
+      <ul id="memoList"></ul>
+    </div>
+  </div>
+
+  <script>
+    const input = document.getElementById("memoInput");
+    const list = document.getElementById("memoList");
+    const statusText = document.getElementById("statusText");
+    const addBtn = document.getElementById("addBtn");
+
+    function formatDate(dateValue) {
+      if (!dateValue) return "";
+      const date = new Date(dateValue);
+      if (Number.isNaN(date.getTime())) return "";
+      return date.toLocaleString("ko-KR");
+    }
+
+    function createMemoElement(memo) {
+      const li = document.createElement("li");
+      li.className = "memo-item";
+
+      const textBox = document.createElement("div");
+      const p = document.createElement("p");
+      p.className = "memo-text";
+      p.textContent = memo.content;
+
+      const meta = document.createElement("p");
+      meta.className = "meta";
+      meta.textContent = formatDate(memo.createdAt);
+
+      textBox.appendChild(p);
+      textBox.appendChild(meta);
+
+      const btn = document.createElement("button");
+      btn.className = "delete-btn";
+      btn.type = "button";
+      btn.textContent = "삭제";
+      btn.onclick = () => deleteMemo(memo._id);
+
+      li.appendChild(textBox);
+      li.appendChild(btn);
+
+      return li;
+    }
+
+    function renderEmptyState() {
+      list.innerHTML = "";
+      const li = document.createElement("li");
+      li.className = "empty-item";
+      li.textContent = "메모가 없습니다. 위 입력창에서 첫 메모를 추가해보세요.";
+      list.appendChild(li);
+    }
+
+    async function addMemo() {
+      const content = input.value.trim();
+      if (!content) {
+        statusText.textContent = "메모 내용을 입력해주세요.";
+        return;
+      }
+
+      addBtn.disabled = true;
+      statusText.textContent = "저장 중...";
+
+      try {
+        const res = await fetch("/save", {
+          method: "POST",
+          headers: { "Content-Type": "application/json" },
+          body: JSON.stringify({ content })
+        });
+
+        if (!res.ok) {
+          throw new Error("저장 실패");
+        }
+
+        input.value = "";
+        // 서버 응답이 json/object/string 어떤 형태여도 목록은 DB 기준으로 다시 동기화
+        await loadMemos();
+        statusText.textContent = "저장 완료";
+      } catch (err) {
+        console.error(err);
+        statusText.textContent = "저장에 실패했습니다.";
+      } finally {
+        addBtn.disabled = false;
+        input.focus();
+      }
+    }
+
+    async function loadMemos() {
+      statusText.textContent = "불러오는 중...";
+
+      try {
+        const res = await fetch("/load");
+        if (!res.ok) {
+          throw new Error("불러오기 실패");
+        }
+
+        const data = await res.json();
+        list.innerHTML = "";
+
+        const memos = Array.isArray(data) ? data : (data ? [data] : []);
+        if (memos.length === 0) {
+          renderEmptyState();
+          statusText.textContent = "아직 메모가 없습니다.";
+          return;
+        }
+
+        statusText.textContent = `총 ${memos.length}개 메모`;
+
+        memos.forEach((memo) => {
+          list.appendChild(createMemoElement(memo));
+        });
+      } catch (err) {
+        console.error(err);
+        statusText.textContent = "메모를 불러오지 못했습니다.";
+      }
+    }
+
+    async function deleteMemo(id) {
+      try {
+        const res = await fetch(`/delete/${id}`, { method: "DELETE" });
+        if (!res.ok) {
+          throw new Error("삭제 실패");
+        }
+        await loadMemos();
+        statusText.textContent = "삭제 완료";
+      } catch (err) {
+        console.error(err);
+        statusText.textContent = "삭제에 실패했습니다.";
+      }
+    }
+
+    addBtn.addEventListener("click", addMemo);
+    input.addEventListener("keydown", (event) => {
+      if (event.key === "Enter") {
+        addMemo();
+      }
+    });
+
+    window.onload = loadMemos;
+  </script>
+</body>
+</html>
